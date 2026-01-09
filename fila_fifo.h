@@ -1,3 +1,6 @@
+#ifndef FILA_FIFO_H
+#define FILA_FIFO_H
+
 typedef struct no_fila {
     int chave;
     int valor;
@@ -18,3 +21,5 @@ int q_peek_val(Fila_FIFO **q);
 int q_size(Fila_FIFO **q);
 int q_get_key_at(Fila_FIFO **q, int idx);
 int q_get_val_at(Fila_FIFO **q, int idx);
+
+#endif
