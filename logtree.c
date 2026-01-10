@@ -7,7 +7,7 @@ void log_inicializar(Log **l) {
 }
 
 // Inclui um registro na ABB ordenado pela conta 
-void log_registrar(Log **l, int conta, int classe, int timer, int caixa) {
+void log_registrar(Log **l, int conta, int classe, int timer, int caixa, int qtde_operacoes) {
     // Se encontrou posição vazia, insere 
     if (*l == NULL) {
         Log *novo = (Log *) malloc(sizeof(Log));
@@ -16,6 +16,7 @@ void log_registrar(Log **l, int conta, int classe, int timer, int caixa) {
             novo->classe = classe;
             novo->timer = timer;
             novo->caixa = caixa;
+            novo->qtde_operacoes = qtde_operacoes; 
             novo->esq = NULL;
             novo->dir = NULL;
             *l = novo;
@@ -25,11 +26,10 @@ void log_registrar(Log **l, int conta, int classe, int timer, int caixa) {
 
     // Navegação da ABB pela chave 'conta' 
     if (conta < (*l)->conta) {
-        log_registrar(&(*l)->esq, conta, classe, timer, caixa);
+        log_registrar(&(*l)->esq, conta, classe, timer, caixa, qtde_operacoes);
     } else if (conta > (*l)->conta) {
-        log_registrar(&(*l)->dir, conta, classe, timer, caixa);
+        log_registrar(&(*l)->dir, conta, classe, timer, caixa, qtde_operacoes);
     }
-    
 }
 
 // Retorna a quantidade de clientes de uma classe específica 
@@ -49,7 +49,7 @@ int log_obter_contagem_por_classe(Log **l, int classe) {
 
 // Retorna a quantidade de clientes de uma caixa específico
 int log_obter_contagem_por_caixa(Log **l, int caixa) {
-	if (*l == NULL) return 0;
+    if (*l == NULL) return 0;
 
     int qtd = 0;
     // Verifica o nó atual 
@@ -77,6 +77,21 @@ int log_obter_soma_por_classe(Log **l, int classe) {
                 + log_obter_soma_por_classe(&(*l)->dir, classe);
 }
 
+// Retorna a soma total de OPERAÇÕES de uma classe 
+int log_obter_total_operacoes_por_classe(Log **l, int classe) {
+    if (*l == NULL) return 0;
+
+    int total = 0;
+    // Se for da classe alvo, soma a quantidade de operações
+    if ((*l)->classe == classe) {
+        total = (*l)->qtde_operacoes;
+    }
+
+    // Soma recursiva 
+    return total + log_obter_total_operacoes_por_classe(&(*l)->esq, classe)
+                 + log_obter_total_operacoes_por_classe(&(*l)->dir, classe);
+}
+
 // Retorna a média de espera para a classe 
 float log_media_por_classe(Log **l, int classe) {
     int soma = log_obter_soma_por_classe(l, classe);
@@ -85,6 +100,16 @@ float log_media_por_classe(Log **l, int classe) {
     if (qtd == 0) return 0.0;
 
     return (float)soma / qtd;
+}
+
+// Retorna a média de OPERAÇÕES por classe
+float log_media_operacoes_por_classe(Log **l, int classe) {
+    int total_ops = log_obter_total_operacoes_por_classe(l, classe);
+    int qtd = log_obter_contagem_por_classe(l, classe);
+
+    if (qtd == 0) return 0.0;
+
+    return (float)total_ops / qtd;
 }
 
 // Liberar memória 
