@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "fila_fifo.h"
+#include "logtree.h"
 
 int main() {
     Fila_FIFO *minhaFila = NULL;
@@ -113,6 +114,85 @@ int main() {
         q_pop_key(&minhaFila);
     }
     free(minhaFila);
+
+    /* 
+       PARTE 2: TESTES DO REGISTRADOR (LOG/ABB)
+        */
+    Log *meuLog = NULL;
+    printf("\n=== Iniciando Bateria de Testes (REGISTRADOR) ===\n");
+
+    /* ----------------------------------------------------------------
+       TESTE L01: Inicialização
+    ---------------------------------------------------------------- */
+    log_inicializar(&meuLog);
+    if (meuLog == NULL) {
+        printf("Teste Log 01: OK\n");
+    } else {
+        printf("Teste Log 01: FALHOU\n");
+    }
+
+    /* ----------------------------------------------------------------
+       TESTE L02: Registro (Inserção)
+       Cenário:
+       - Conta 100: Classe 1, Espera 10
+       - Conta 50:  Classe 1, Espera 20
+       - Conta 150: Classe 2, Espera 30
+       - Conta 200: Classe 2, Espera 50
+    ---------------------------------------------------------------- */
+    log_registrar(&meuLog, 100, 1, 10, 1);
+    log_registrar(&meuLog, 50,  1, 20, 2);
+    log_registrar(&meuLog, 150, 2, 30, 1);
+    log_registrar(&meuLog, 200, 2, 50, 3);
+    
+    // Verifica se a raiz foi criada (Conta 100)
+    if (meuLog != NULL && meuLog->conta == 100) {
+        printf("Teste Log 02: OK\n");
+    } else {
+        printf("Teste Log 02: FALHOU\n");
+    }
+
+    /* ----------------------------------------------------------------
+       TESTE L03: Contagem por Classe
+       Esperado: Classe 1 = 2 clientes, Classe 2 = 2 clientes, Classe 3 = 0
+    ---------------------------------------------------------------- */
+    int qtdC1 = log_obter_contagem_por_classe(&meuLog, 1);
+    int qtdC2 = log_obter_contagem_por_classe(&meuLog, 2);
+    int qtdC3 = log_obter_contagem_por_classe(&meuLog, 3);
+
+    if (qtdC1 == 2 && qtdC2 == 2 && qtdC3 == 0) {
+        printf("Teste Log 03: OK\n");
+    } else {
+        printf("Teste Log 03: FALHOU (C1:%d, C2:%d, C3:%d)\n", qtdC1, qtdC2, qtdC3);
+    }
+
+    /* ----------------------------------------------------------------
+       TESTE L04: Soma por Classe
+       Esperado: Classe 1 (10+20=30), Classe 2 (30+50=80)
+    ---------------------------------------------------------------- */
+    int somaC1 = log_obter_soma_por_classe(&meuLog, 1);
+    int somaC2 = log_obter_soma_por_classe(&meuLog, 2);
+
+    if (somaC1 == 30 && somaC2 == 80) {
+        printf("Teste Log 04: OK\n");
+    } else {
+        printf("Teste Log 04: FALHOU (Soma C1:%d, Soma C2:%d)\n", somaC1, somaC2);
+    }
+
+    /* ----------------------------------------------------------------
+       TESTE L05: Média por Classe
+       Esperado: Classe 1 (30/2 = 15.0), Classe 2 (80/2 = 40.0)
+    ---------------------------------------------------------------- */
+    float mediaC1 = log_media_por_classe(&meuLog, 1);
+    float mediaC2 = log_media_por_classe(&meuLog, 2);
+
+    if (mediaC1 == 15.0f && mediaC2 == 40.0f) {
+        printf("Teste Log 05: OK\n");
+    } else {
+        printf("Teste Log 05: FALHOU (Media C1:%.2f, Media C2:%.2f)\n", mediaC1, mediaC2);
+    }
+
+    /* Limpeza Log */
+    log_liberar(&meuLog);
 
     return 0;
 }
