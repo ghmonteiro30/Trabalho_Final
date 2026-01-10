@@ -8,7 +8,7 @@ void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, i
 	int i;
 	
 	if (temp){
-		temp->caixas = caixas;
+		temp->caixas = (int*)malloc(sizeof(int));
 		temp->delta_t = delta_t;
 		for (i = 0; i < 5; i++) {
 			temp->fila[i] = NULL;
@@ -25,27 +25,37 @@ void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, i
 	}
 }
 
-int e_inserir_por_fila(Escalonador **e, int classe, int num_conta, int qtde_operacoes){
-	return q_push(&(*e)->fila[classe-1], num_conta, qtde_operacoes);
+int e_inserir_por_fila(Escalonador *e, int classe, int num_conta, int qtde_operacoes){
+	return q_push(&e->fila[classe-1], num_conta, qtde_operacoes);
 }
 
 int e_obter_prox_num_conta(Escalonador *e){
-	int i = 0;
+	int num_conta, i = 0;	
+	// Verifica se todas as filas estão vazias
+	num_conta = q_peek_key(&e->fila[e->idx_disciplina]);
+	while (num_conta == -1) {
+		if (e->idx_disciplina == 4)
+			e->idx_disciplina = 0;
+		else
+			e->idx_disciplina++;
+		num_conta = q_peek_key(&e->fila[e->idx_disciplina]);
+		e->clientes_restantes = e->disciplina[e->idx_disciplina];
+		i++;
+		if (num_conta == -1 && i == 4)
+			return -1;
+	}
 	
-	// Procura a próxima fila a ser atendida, tendo em vista que algumas ou todas podem estar vazias
-	while (e->clientes_restantes == 0 || e_consultar_prox_num_conta(e) == -1) {
+	
+	num_conta = q_pop_key(&e->fila[e->idx_disciplina]);
+	e->clientes_restantes--;
+	if (e->clientes_restantes == 0) {
 		if (e->idx_disciplina == 4)
 			e->idx_disciplina = 0;
 		else
 			e->idx_disciplina++;
 		e->clientes_restantes = e->disciplina[e->idx_disciplina];
-		i++;
-		if (i == 5)
-			return -1; // Todas as filas estão vazias
 	}
-	
-	e->clientes_restantes--;
-	return q_pop_key(&e->fila[e->idx_disciplina]);
+	return num_conta;
 }
 
 int e_consultar_prox_num_conta(Escalonador *e){
@@ -79,7 +89,7 @@ int e_consultar_tempo_prox_cliente(Escalonador *e){
 	while (qtde == -1) {
 		i++;
 		qtde = q_peek_val(&e->fila[i]);
-		if (qtde == - 1 && i == 4)
+		if (qtde == -1 && i == 4)
 			return -1;
 	}
 	// Se alguma fila não estiver vazia, será onde o próximo cliente estará de acordo com a disciplina de escalonamento
@@ -103,7 +113,7 @@ int e_conf_por_arquivo(Escalonador **e, char *nome_arq_conf){
 }
 
 void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
-	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper;
+	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper, i, j, rodadas;
 	FILE *arq; 
 	char buffer[10];
 	
@@ -128,7 +138,13 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 			classe = 4;
 		if (strcmp("Leezu", buffer) == 0)
 			classe = 5;
-		e_inserir_por_fila(e, classe, num_conta, oper);
+		e_inserir_por_fila(*e, classe, num_conta, oper);
+	}
+	fclose(arq);
+
+	while (e_consultar_qtde_clientes(*e) > 0) {
+		for (j = 0; j < caixas; j++)
+			printf("%d\n", e_obter_prox_num_conta(*e));
 	}
 	
 }

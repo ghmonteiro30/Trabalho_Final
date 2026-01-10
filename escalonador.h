@@ -3,14 +3,14 @@
 typedef struct _escalonador{
 	Fila_FIFO *fila[5];
 	int disciplina[5];
-	int caixas;
+	int *caixas;
 	int delta_t;
 	int idx_disciplina; // Indice da disciplina atual
 	int clientes_restantes; // Clientes restantes acordo com a disciplina
 } Escalonador;
 
 void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, int n_3, int n_4, int n_5);
-int e_inserir_por_fila(Escalonador **e, int classe, int num_conta, int qtde_operacoes);
+int e_inserir_por_fila(Escalonador *e, int classe, int num_conta, int qtde_operacoes);
 int e_obter_prox_num_conta(Escalonador *e);
 int e_consultar_prox_num_conta(Escalonador *e);
 int e_consultar_prox_qtde_oper(Escalonador *e);
