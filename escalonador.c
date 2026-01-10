@@ -9,11 +9,13 @@ void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, i
 	
 	if (temp){
 		temp->caixas = (int*)malloc(sizeof(int));
-		temp->delta_t = delta_t;
+		for (i = 0; i < caixas; i++)
+			temp->caixas[i] = 0;
 		for (i = 0; i < 5; i++) {
 			temp->fila[i] = NULL;
 			q_setup(&temp->fila[i]);
 		}
+		temp->delta_t = delta_t;
 		temp->disciplina[0] = n_1;
 		temp->disciplina[1] = n_2;
 		temp->disciplina[2] = n_3;
@@ -25,13 +27,9 @@ void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, i
 	}
 }
 
-int e_inserir_por_fila(Escalonador *e, int classe, int num_conta, int qtde_operacoes){
-	return q_push(&e->fila[classe-1], num_conta, qtde_operacoes);
-}
-
-int e_obter_prox_num_conta(Escalonador *e){
+void e_pular_filas_vazias(Escalonador *e){
 	int num_conta, i = 0;	
-	// Verifica se todas as filas estão vazias
+
 	num_conta = q_peek_key(&e->fila[e->idx_disciplina]);
 	while (num_conta == -1) {
 		if (e->idx_disciplina == 4)
@@ -42,10 +40,18 @@ int e_obter_prox_num_conta(Escalonador *e){
 		e->clientes_restantes = e->disciplina[e->idx_disciplina];
 		i++;
 		if (num_conta == -1 && i == 4)
-			return -1;
+			return;// Sai se todas as listas estiverem vazias
 	}
+}
+
+int e_inserir_por_fila(Escalonador *e, int classe, int num_conta, int qtde_operacoes){
+	return q_push(&e->fila[classe-1], num_conta, qtde_operacoes);
+}
+
+int e_obter_prox_num_conta(Escalonador *e){
+	int num_conta;
 	
-	
+	e_pular_filas_vazias(e);
 	num_conta = q_pop_key(&e->fila[e->idx_disciplina]);
 	e->clientes_restantes--;
 	if (e->clientes_restantes == 0) {
@@ -59,14 +65,17 @@ int e_obter_prox_num_conta(Escalonador *e){
 }
 
 int e_consultar_prox_num_conta(Escalonador *e){
+	e_pular_filas_vazias(e);
 	return q_peek_key(&e->fila[e->idx_disciplina]);
 }
 
 int e_consultar_prox_qtde_oper(Escalonador *e){
+	e_pular_filas_vazias(e);
 	return q_peek_val(&e->fila[e->idx_disciplina]);
 }
 
 int e_consultar_prox_fila(Escalonador *e){
+	e_pular_filas_vazias(e);
 	return e->idx_disciplina + 1; // +1 pois os indices vão de 0 a 4, mas as filas são nomeadas de 1 a 5
 }
 
@@ -92,7 +101,7 @@ int e_consultar_tempo_prox_cliente(Escalonador *e){
 		if (qtde == -1 && i == 4)
 			return -1;
 	}
-	// Se alguma fila não estiver vazia, será onde o próximo cliente estará de acordo com a disciplina de escalonamento
+	e_pular_filas_vazias(e);
 	return e->delta_t * q_peek_val(&e->fila[e->idx_disciplina]);
 }
 
@@ -143,8 +152,14 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 	fclose(arq);
 
 	while (e_consultar_qtde_clientes(*e) > 0) {
-		for (j = 0; j < caixas; j++)
-			printf("%d\n", e_obter_prox_num_conta(*e));
+		for (j = 0; j < caixas; j++) {
+			/*
+			printf("T = %d min: Caixa %d chama da categoria %d cliente da conta %d para realizar %d operacoes\n", (*e)->caixas[j], j+1, (*e)->idx_disciplina+1, e_consultar_prox_num_conta(*e), e_consultar_prox_qtde_oper(*e));
+			(*e)->caixas[j] = (*e)->caixas[j] + (e_consultar_prox_qtde_oper(*e) * (*e)->delta_t);
+			*/
+			//printf("%d\n", e_consultar_prox_qtde_oper(*e));
+			printf("%d\n",e_obter_prox_num_conta(*e));
+		}
 	}
 	
 }

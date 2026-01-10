@@ -19,3 +19,6 @@ int e_consultar_qtde_clientes(Escalonador *e);
 int e_consultar_tempo_prox_cliente(Escalonador *e);
 int e_conf_por_arquivo(Escalonador **e, char *nome_arq_conf);
 void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out);
+
+// Se a próxima fila ficou vazia, pula a disciplina de atendimento para a próxima fila não vazia
+void e_pular_filas_vazias(Escalonador *e);
