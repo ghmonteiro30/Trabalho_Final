@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include "escalonador.h"
+#include "logtree.h"
 
 void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, int n_3, int n_4, int n_5){
 	Escalonador *temp = (Escalonador*)malloc(sizeof(Escalonador));
 	int i;
 	
 	if (temp){
-		temp->caixas = (int*)malloc(sizeof(int));
+		temp->caixa = (int*)malloc(sizeof(int));
 		for (i = 0; i < caixas; i++)
-			temp->caixas[i] = 0;
+			temp->caixa[i] = 0;
 		for (i = 0; i < 5; i++) {
 			temp->fila[i] = NULL;
 			q_setup(&temp->fila[i]);
@@ -122,7 +123,8 @@ int e_conf_por_arquivo(Escalonador **e, char *nome_arq_conf){
 }
 
 void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
-	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper, i, j, rodadas;
+	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper, i, rodadas, caixa_livre, timer, tempo_total = 0;
+	Log *registrador;
 	FILE *arq; 
 	char buffer[10];
 	
@@ -137,29 +139,53 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 	e_inicializar(e, caixas, delta_t, n_1, n_2, n_3, n_4, n_5);
 	
 	while (fscanf(arq, "%s - conta %d - %d operacao(oes)", buffer, &num_conta, &oper) != EOF) {
-		if (strcmp("Premium", buffer) == 0)
-			classe = 1;
-		if (strcmp("Ouro", buffer) == 0)
-			classe = 2;
-		if (strcmp("Prata", buffer) == 0)
-			classe = 3;
-		if (strcmp("Bronze", buffer) == 0)
-			classe = 4;
-		if (strcmp("Leezu", buffer) == 0)
-			classe = 5;
+		classe = get_idx_classe(buffer) + 1;
 		e_inserir_por_fila(*e, classe, num_conta, oper);
 	}
 	fclose(arq);
-
-	while (e_consultar_qtde_clientes(*e) > 0) {
-		for (j = 0; j < caixas; j++) {
-			/*
-			printf("T = %d min: Caixa %d chama da categoria %d cliente da conta %d para realizar %d operacoes\n", (*e)->caixas[j], j+1, (*e)->idx_disciplina+1, e_consultar_prox_num_conta(*e), e_consultar_prox_qtde_oper(*e));
-			(*e)->caixas[j] = (*e)->caixas[j] + (e_consultar_prox_qtde_oper(*e) * (*e)->delta_t);
-			*/
-			//printf("%d\n", e_consultar_prox_qtde_oper(*e));
-			printf("%d\n",e_obter_prox_num_conta(*e));
-		}
-	}
 	
+	arq = fopen(nome_arq_out, "wt");
+	log_inicializar(&registrador);
+		
+	while (e_consultar_qtde_clientes(*e) > 0) {
+		caixa_livre = 0;
+		for (i = 1; i < caixas; i++)
+			if ((*e)->caixa[i] < (*e)->caixa[caixa_livre])
+				caixa_livre = i;			
+		num_conta = e_consultar_prox_num_conta(*e);
+		oper = e_consultar_prox_qtde_oper(*e);
+		classe = (*e)->idx_disciplina;
+		timer = (*e)->caixa[caixa_livre];
+		
+		
+		log_registrar(&registrador, num_conta, classe, timer, caixa_livre);
+		
+		printf("T = %d min: Caixa %d chama da categoria %s cliente da conta %d para realizar %d operacoes\n", timer, caixa_livre+1, NOME_CATEGORIA[classe], num_conta, oper);
+		(*e)->caixa[caixa_livre] = timer + ((e_consultar_prox_qtde_oper(*e) * (*e)->delta_t));
+		tempo_total = tempo_total + ((*e)->caixa[caixa_livre] - tempo_total);
+		
+		e_obter_prox_num_conta(*e);
+	}
+	printf("Tempo total: %d\n", tempo_total);
+	printf("Tempo medio de espera dos %d clientes Premium: %g\n", log_obter_contagem_por_classe(&registrador, 0), log_media_por_classe(&registrador, 0));
+	printf("Tempo medio de espera dos %d clientes Ouro: %g\n", log_obter_contagem_por_classe(&registrador, 1), log_media_por_classe(&registrador, 1));
+	printf("Tempo medio de espera dos %d clientes Prata: %g\n", log_obter_contagem_por_classe(&registrador, 2), log_media_por_classe(&registrador, 2));
+	printf("Tempo medio de espera dos %d clientes Bronze: %g\n", log_obter_contagem_por_classe(&registrador, 3), log_media_por_classe(&registrador, 3));
+	printf("Tempo medio de espera dos %d clientes Leezu: %g\n", log_obter_contagem_por_classe(&registrador, 4), log_media_por_classe(&registrador, 4));
+	for (i = 0; i < caixas; i++)
+		printf("O caixa de número %d atendeu %d clientes.\n", i+1, 0);
+}
+
+TipoCategoria get_idx_classe(char *nome) {
+	if (strcmp(nome, "Premium") == 0)
+		return CLASSE_PREMIUM;
+	if (strcmp(nome, "Ouro") == 0)
+		return CLASSE_OURO;
+	if (strcmp(nome, "Prata") == 0)
+		return CLASSE_PRATA;
+	if (strcmp(nome, "Bronze") == 0)
+		return CLASSE_BRONZE;
+	if (strcmp(nome, "Leezu") == 0)
+		return CLASSE_LEEZU;
+	return CLASSE_DESCONHECIDA;
 }
