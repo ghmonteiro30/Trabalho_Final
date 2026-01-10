@@ -136,7 +136,7 @@ int e_conf_por_arquivo(Escalonador **e, char *nome_arq_conf){
 }
 
 void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
-	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper, i, rodadas, caixa_livre, timer, tempo_total = 0;
+	int caixas, delta_t, n_1, n_2, n_3, n_4, n_5, num_conta, classe, oper, i, rodadas, caixa_livre, timer, tempo_atendimento, tempo_total = 0;
 	Log *registrador;
 	FILE *arq; 
 	char buffer[10];
@@ -173,12 +173,14 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 		oper = e_consultar_prox_qtde_oper(*e);
 		classe = (*e)->idx_disciplina;
 		timer = (*e)->caixa[caixa_livre];
+		tempo_atendimento = e_consultar_tempo_prox_cliente(*e);
 		//Entra os dados no registrador
 		log_registrar(&registrador, num_conta, classe, timer, caixa_livre, oper);
 		//Escreve o log de atendimento no arquivo de saida
 		fprintf(arq, "T = %d min: Caixa %d chama da categoria %s cliente da conta %d para realizar %d operacao(oes).\n", timer, caixa_livre+1, NOME_CATEGORIA[classe], num_conta, oper);
+		printf("Cliente %-6d de classe %-7s realizou %2d operacoes no caixa %d | Tempo de espera: %5d min | Tempo de atendimento: %2d min\n", num_conta, NOME_CATEGORIA[classe], oper, caixa_livre+1, timer, tempo_atendimento);
 		// Atualiza o timer do caixa usado
-		(*e)->caixa[caixa_livre] = timer + e_consultar_tempo_prox_cliente(*e);
+		(*e)->caixa[caixa_livre] = timer + tempo_atendimento;
 		// O tempo total é o caixa com maior timer, pois é tempo quando o último cliente terminou de ser atendido
 		if ((*e)->caixa[caixa_livre] > tempo_total)
 			tempo_total = (*e)->caixa[caixa_livre];
@@ -187,6 +189,7 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 	}
 	//Escreve as estatiticas do funcionamento no arquivo de saida
 	fprintf(arq, "Tempo total de atendimento: %d minutos.\n", tempo_total);
+	printf("Tempo total de atendimento: %d minutos\n", tempo_total);
 	fprintf(arq, "Tempo medio de espera dos %d clientes Premium: %.2f\n", log_obter_contagem_por_classe(&registrador, 0), log_media_por_classe(&registrador, 0));
 	fprintf(arq, "Tempo medio de espera dos %d clientes Ouro: %.2f\n", log_obter_contagem_por_classe(&registrador, 1), log_media_por_classe(&registrador, 1));
 	fprintf(arq, "Tempo medio de espera dos %d clientes Prata: %.2f\n", log_obter_contagem_por_classe(&registrador, 2), log_media_por_classe(&registrador, 2));
