@@ -47,6 +47,21 @@ int log_obter_contagem_por_classe(Log **l, int classe) {
                + log_obter_contagem_por_classe(&(*l)->dir, classe);
 }
 
+// Retorna a quantidade de clientes de uma caixa específico
+int log_obter_contagem_por_caixa(Log **l, int caixa) {
+	if (*l == NULL) return 0;
+
+    int qtd = 0;
+    // Verifica o nó atual 
+    if ((*l)->caixa == caixa) {
+        qtd = 1;
+    }
+
+    // Soma recursiva com as subárvores 
+    return qtd + log_obter_contagem_por_caixa(&(*l)->esq, caixa)
+               + log_obter_contagem_por_caixa(&(*l)->dir, caixa);
+}
+
 // Retorno da soma dos tempos de espera de uma classe 
 int log_obter_soma_por_classe(Log **l, int classe) {
     if (*l == NULL) return 0;

@@ -18,6 +18,9 @@ float log_media_por_classe(Log **l, int classe);
 int log_obter_soma_por_classe(Log **l, int classe);
 int log_obter_contagem_por_classe(Log **l, int classe);
 
+// Função extra para contar clientes por caixa
+int log_obter_contagem_por_caixa(Log **l, int caixa);
+
 // Função auxiliar para limpar memória 
 void log_liberar(Log **l);
 
