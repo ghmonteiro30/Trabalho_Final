@@ -9,7 +9,7 @@ void e_inicializar(Escalonador **e, int caixas, int delta_t, int n_1, int n_2, i
 	int i;
 	
 	if (temp){
-		temp->caixa = (int*)malloc(sizeof(int));
+		temp->caixa = (int*)malloc(sizeof(int) * caixas);
 		for (i = 0; i < caixas; i++)
 			temp->caixa[i] = 0;
 		for (i = 0; i < 5; i++) {
@@ -157,23 +157,25 @@ void e_rodar(Escalonador **e, char *nome_arq_in, char *nome_arq_out){
 		classe = (*e)->idx_disciplina;
 		timer = (*e)->caixa[caixa_livre];
 		
-		
 		log_registrar(&registrador, num_conta, classe, timer, caixa_livre);
 		
 		printf("T = %d min: Caixa %d chama da categoria %s cliente da conta %d para realizar %d operacoes\n", timer, caixa_livre+1, NOME_CATEGORIA[classe], num_conta, oper);
+		// Atualiza o timer do caixa usado
 		(*e)->caixa[caixa_livre] = timer + ((e_consultar_prox_qtde_oper(*e) * (*e)->delta_t));
-		tempo_total = tempo_total + ((*e)->caixa[caixa_livre] - tempo_total);
-		
+		// O tempo total é o caixa com maior timer, pois é tempo quando o último cliente terminou de ser atendido
+		if ((*e)->caixa[caixa_livre] > tempo_total)
+			tempo_total = (*e)->caixa[caixa_livre];
+		// Atende o cliente, tirando-o da fila
 		e_obter_prox_num_conta(*e);
 	}
-	printf("Tempo total: %d\n", tempo_total);
+	printf("Tempo total de atendimento: %d minutos\n", tempo_total);
 	printf("Tempo medio de espera dos %d clientes Premium: %g\n", log_obter_contagem_por_classe(&registrador, 0), log_media_por_classe(&registrador, 0));
 	printf("Tempo medio de espera dos %d clientes Ouro: %g\n", log_obter_contagem_por_classe(&registrador, 1), log_media_por_classe(&registrador, 1));
 	printf("Tempo medio de espera dos %d clientes Prata: %g\n", log_obter_contagem_por_classe(&registrador, 2), log_media_por_classe(&registrador, 2));
 	printf("Tempo medio de espera dos %d clientes Bronze: %g\n", log_obter_contagem_por_classe(&registrador, 3), log_media_por_classe(&registrador, 3));
 	printf("Tempo medio de espera dos %d clientes Leezu: %g\n", log_obter_contagem_por_classe(&registrador, 4), log_media_por_classe(&registrador, 4));
 	for (i = 0; i < caixas; i++)
-		printf("O caixa de número %d atendeu %d clientes.\n", i+1, 0);
+		printf("O caixa de número %d atendeu %d clientes.\n", i+1, log_obter_contagem_por_caixa(&registrador, i));
 }
 
 TipoCategoria get_idx_classe(char *nome) {
